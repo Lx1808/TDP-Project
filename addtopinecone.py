@@ -11,10 +11,12 @@ from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.indexes import VectorstoreIndexCreator
 
+
+
 # os.environ["OPENAI_API_KEY"] = "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"
 load_dotenv()
 
-loader = PyPDFLoader("/Users/lixiang/Documents/COS60011/es-docs-qa/TestFile.pdf")
+loader = PyPDFLoader("TestFile.pdf")
 
 index = VectorstoreIndexCreator(
     vectorstore_cls=Chroma,
