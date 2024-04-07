@@ -8,14 +8,15 @@ qa_pairs = {
 
 def create_pdf(qa_pairs, filename='QA.pdf'):
     pdf_writer = PyPDF2.PdfWriter()
-
+    
     for question, answer in qa_pairs.items():
-        pdf_writer.add_page()
-        page = pdf_writer.pages[-1]
-        page.mergePage(PyPDF2.PdfFileReader('pdf_generator/templates/blank_page.pdf').getPage(0)) # Use a blank page template
-
+        page = PyPDF2.pdf.PageObject.createBlankPage(width=612, height=792)  # Create a new blank page
+        page.mergePage(PyPDF2.PdfFileReader('pdf_generator/templates/blank_page.pdf').getPage(0))  # Use a blank page template
+        
         content = f"Q: {question}\nA: {answer}"
         page.mergePage(PyPDF2.pdf.PageObject.create_text_object(content))
+        
+        pdf_writer.add_page(page)
 
     with open(filename, 'wb') as pdf_file:
         pdf_writer.write(pdf_file)
