@@ -1,4 +1,6 @@
 import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 import streamlit as st
 from streamlit_chat import message
 from dotenv import load_dotenv
