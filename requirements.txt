@@ -1,0 +1,12 @@
+streamlit
+streamlit-chat
+python-dotenv
+transformers
+torch
+langchain
+langdetect
+faiss-cpu
+edge_tts
+SpeechRecognition
+chromadb
+pyaudio
