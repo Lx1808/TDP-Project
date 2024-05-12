@@ -1,6 +1,6 @@
 # Experimental Project
 
-Welcome to my experimental project repository! This branch contains various experiments and attempts as I explore and learn new concepts.
+Welcome to the experimental part of my journey! This branch contains various experiments and attempts as I explore and learn new concepts.
 
 ## Folder Structure
 
