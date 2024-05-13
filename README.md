@@ -14,7 +14,7 @@ In the `Attempt 2`, I tried to create something more stable. I experimented with
 
 ## Upcoming Features
 
-I am excited to announce that I have recently added an exciting new feature to this project! Currently, I am working on improving the bot itself to enhance its capabilities and performance. Stay tuned for the latest version, which will be available here on May 18, 2024.
+Please refer to the latest file if you are interested in contributing.
 
 ## Conclusion
 
