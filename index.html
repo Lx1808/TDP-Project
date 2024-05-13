@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SwinburneFAQ Bot</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <h1>SwinburneFAQ Bot</h1>
+      <div>
+        <input v-model="query" placeholder="Enter your message" />
+        <button @click="sendQuery">Send</button>
+      </div>
+      <div>
+        <ul>
+          <li v-for="message in chatHistory">
+            <strong>{{ message.sender }}:</strong> {{ message.content }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      new Vue({
+        el: '#app',
+        data: {
+          query: '',
+          chatHistory: []
+        },
+        methods: {
+          async sendQuery() {
+            const response = await axios.post('http://127.0.0.1:5000/get_response', {
+              query: this.query
+            });
+            this.chatHistory.push({
+              sender: 'Human',
+              content: this.query
+            });
+            this.chatHistory.push({
+              sender: 'AI',
+              content: response.data.response
+            });
+            this.query = '';
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
