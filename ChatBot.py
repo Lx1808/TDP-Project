@@ -15,7 +15,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
-
+import multilingual as ml
 load_dotenv()
 
 
@@ -76,7 +76,7 @@ def get_response(query, chat_history, vectorstore):
     # Retrieve relevant documents
     docs = vectorstore.similarity_search(query)
     context_str = "\n".join([doc.page_content for doc in docs])
-
+    print("context_str:",context_str)
     chain = prompt | llm | StrOutputParser()
 
     return chain.stream({
@@ -108,12 +108,19 @@ if user_query is not None and user_query != "":
     st.session_state.chat_history.append(HumanMessage(user_query))
 
     with st.chat_message("Human"):
+        print("HumanMessage(user_query)",user_query)
+        language_type=ml.language_detection(user_query)
+        print("language:",language_type)
         st.markdown(user_query)
 
     with st.spinner("Answering..."):
         with st.chat_message("AI"):
             ai_response = st.write_stream(get_response(user_query, st.session_state.chat_history, vectorstore))
+            print("ai_response:",ai_response)
+            
+            ai_response_translated = ml.translator(language_type,ai_response)
+            print("ai_response_translated:", ai_response_translated)
+            st.markdown(ai_response_translated)
             output_file = generate_speech(ai_response)
             st.audio(output_file)
-
-        st.session_state.chat_history.append(AIMessage(content=ai_response))
+        # st.session_state.chat_history.append(AIMessage(content=ai_response))
