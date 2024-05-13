@@ -21,9 +21,9 @@ from langchain.callbacks.manager import collect_runs
 from langsmith import Client
 from streamlit_feedback import streamlit_feedback
 
-os.environ['LANGCHAIN_TRACING_V2'] = 'true'
+os.environ['LANGCHAIN_TRACING_V2'] = 'false'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = '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'
+os.environ['LANGCHAIN_API_KEY'] = 'YOUR-API-KEY'
 load_dotenv()
 
 client = Client()
