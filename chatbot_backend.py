@@ -6,6 +6,8 @@ import speech_recognition as sr
 import torch
 import torch.nn.functional as F
 import json
+
+import translator as ts
 from flask import Flask, request, jsonify, session
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.messages import HumanMessage, AIMessage
@@ -19,7 +21,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from dotenv import load_dotenv
 from flask_cors import CORS
-
+from langdetect import detect
 load_dotenv()
 
 def recognize_speech():
@@ -106,16 +108,30 @@ vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embe
 
 @app.route('/get_response', methods=['POST'])
 def get_response():
+    
+    # input_text = "生活啊"
+    # detected_lang = ts.detect_language(input_text)
+    # print(f"Detected language: {detected_lang}")
+    # french_translation = ts.translate(input_text, "fr")
+    # print(f"French translation: {french_translation}")
+
     data = request.get_json()
     query = data['query']
+    print("query:",query)
     chat_history = session.get('chat_history', [])
     chat_history.append({'sender': 'Human', 'content': query})
     response = query_and_respond(query, chat_history, vectorstore)
-    print('++++-----++++')
-    print(response)
-    chat_history.append({'sender': 'AI', 'content': response})
-
-    return jsonify({'response': response})
+    print('++++-----------------------------++++')
+    print("response:",response)
+    target_language = ts.detect_language(query)
+    if(not target_language=="en"):
+         new_response = ts.translate(response, target_language)
+        #  new_response=response+"\n"+response_translated
+    else:
+        new_response=response
+    print("new_response:",new_response)
+    chat_history.append({'sender': 'AI', 'content': new_response})
+    return jsonify({'response': new_response})
 
 def query_and_respond(query, chat_history, vectorstore):
     template = """

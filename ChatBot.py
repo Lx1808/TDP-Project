@@ -6,6 +6,7 @@ import speech_recognition as sr
 import torch
 import torch.nn.functional as F
 import json
+import translator as ts
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,8 +18,11 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from dotenv import load_dotenv
-import multilingual as ml
 load_dotenv()
+# DEFAULT_WELCOME_MESSAGE = "Hello! I'm Swinburne Online, an educational advisor. How can I assist you today with your inquiry about Swinburne Online?"
+# st.session_state.chat_history = getattr(st.session_state, 'chat_history', [])
+# if(not st.session_state.chat_history):
+#     st.session_state.chat_history = [AIMessage(DEFAULT_WELCOME_MESSAGE)]
 
 
 def recognize_speech():
@@ -148,8 +152,8 @@ if user_query is not None and user_query.strip() != "":
 
     with st.chat_message("Human"):
         print("HumanMessage(user_query)",user_query)
-        language_type=ml.language_detection(user_query)
-        print("language:",language_type)
+        target_language = ts.detect_language(user_query)
+        print("language:",target_language)
         st.markdown(user_query)
 
     with st.spinner("Answering..."):
@@ -157,13 +161,20 @@ if user_query is not None and user_query.strip() != "":
             ai_response = st.write_stream(get_response(user_query, st.session_state.chat_history, vectorstore))
             print("ai_response:", ai_response)
             
-            ai_response_translated = ml.translator(language_type, ai_response)
-            print("ai_response_translated:", ai_response_translated)
-            st.markdown(ai_response_translated)
+            if(not target_language=="en"):
+                new_response = ts.translate(ai_response, target_language)
+        #  new_response=response+"\n"+response_translated
+            else:
+                new_response=ai_response
+            print("new_response:",new_response)
             output_file = generate_speech(ai_response)
             st.audio(output_file)
-        st.session_state.chat_history.append(AIMessage(content=ai_response))
-else:
-    st.session_state.chat_history.append(HumanMessage(" "))
-    ai_response = "It looks like you canceled the entry midway. If you have any additional questions or need to discuss further please feel free to let me know and I'll be happy to help!"
-    st.session_state.chat_history.append(AIMessage(content=ai_response))
+            st.markdown(new_response)
+        st.session_state.chat_history.append(AIMessage(ai_response))
+# else:
+    # print("user_query",user_query)
+    # DEFAULT_WELCOME_MESSAGE = "Hello! I'm Swinburne Online, an educational advisor. How can I assist you today with your inquiry about Swinburne Online?"
+    # st.session_state.chat_history = [AIMessage(DEFAULT_WELCOME_MESSAGE)]
+    # st.session_state.chat_history.append(HumanMessage(" "))
+    # ai_response = "It looks like you canceled the entry midway. If you have any additional questions or need to discuss further please feel free to let me know and I'll be happy to help!"
+    # st.session_state.chat_history.append(AIMessage(content=ai_response))
