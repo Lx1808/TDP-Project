@@ -6,6 +6,7 @@ import speech_recognition as sr
 import torch
 import torch.nn.functional as F
 import json
+from flask import Flask, request, jsonify, session
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,9 +18,9 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from dotenv import load_dotenv
-import multilingual as ml
-load_dotenv()
+from flask_cors import CORS
 
+load_dotenv()
 
 def recognize_speech():
     r = sr.Recognizer()
@@ -67,6 +68,20 @@ def compute_similarity_scores(user_input, question_embeddings, questions):
     similarity_scores = F.cosine_similarity(user_input_embedding, question_embeddings)
     return similarity_scores
 
+def recommend_similar_questions():
+    user_input = st.session_state.user_input
+    if not user_input:
+        return []
+    similarity_scores = compute_similarity_scores(user_input, question_embeddings, processed_questions)
+    top_indices = similarity_scores.topk(5).indices
+    top_questions = [questions[idx] for idx in top_indices]
+    return top_questions
+
+
+
+app = Flask(__name__)
+CORS(app)
+
 # Load data from JSON file
 with open("data.json", "r", encoding="utf-8") as file:
     data = json.load(file)
@@ -86,19 +101,23 @@ processed_questions = [preprocess_text(question) for question in questions]
 question_embeddings = compute_sentence_embeddings(processed_questions)
 
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-st.set_page_config(page_title="SwinburneFAQ Bot", page_icon="🤖")
-
-st.title("SwinburneFAQ Bot")
-
 embedding = OpenAIEmbeddings()
 vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embedding)
 
+@app.route('/get_response', methods=['POST'])
+def get_response():
+    data = request.get_json()
+    query = data['query']
+    chat_history = session.get('chat_history', [])
+    chat_history.append({'sender': 'Human', 'content': query})
+    response = query_and_respond(query, chat_history, vectorstore)
+    print('++++-----++++')
+    print(response)
+    chat_history.append({'sender': 'AI', 'content': response})
 
-# get response
-def get_response(query, chat_history, vectorstore):
+    return jsonify({'response': response})
+
+def query_and_respond(query, chat_history, vectorstore):
     template = """
         You are Swinburne Online, an educational advisor. You are answering current and prospective student's questions about Swinburne Online. You do not make up any information that is not given in the context.
 
@@ -115,55 +134,18 @@ def get_response(query, chat_history, vectorstore):
     # Retrieve relevant documents
     docs = vectorstore.similarity_search(query)
     context_str = "\n".join([doc.page_content for doc in docs])
-    print("context_str:",context_str)
+
     chain = prompt | llm | StrOutputParser()
 
-    return chain.stream({
+    result_stream = chain.stream({
         "context": context_str,
         "chat_history": chat_history,
         "user_question": query
     })
 
+    result_string = ''.join(result for result in result_stream)
 
-# conversation
-for message in st.session_state.chat_history:
-    if isinstance(message, HumanMessage):
-        with st.chat_message("Human"):
-            st.markdown(message.content)
-    else:
-        with st.chat_message("AI"):
-            st.markdown(message.content)
+    return result_string
 
-speech_btn = st.button("🎤Click here to speak.")
-
-# user input
-user_query = st.chat_input("Your message")
-
-if speech_btn:
-    speech_text = recognize_speech()
-    user_query = speech_text
-
-if user_query is not None and user_query.strip() != "":
-    st.session_state.chat_history.append(HumanMessage(user_query))
-
-    with st.chat_message("Human"):
-        print("HumanMessage(user_query)",user_query)
-        language_type=ml.language_detection(user_query)
-        print("language:",language_type)
-        st.markdown(user_query)
-
-    with st.spinner("Answering..."):
-        with st.chat_message("AI"):
-            ai_response = st.write_stream(get_response(user_query, st.session_state.chat_history, vectorstore))
-            print("ai_response:", ai_response)
-            
-            ai_response_translated = ml.translator(language_type, ai_response)
-            print("ai_response_translated:", ai_response_translated)
-            st.markdown(ai_response_translated)
-            output_file = generate_speech(ai_response)
-            st.audio(output_file)
-        st.session_state.chat_history.append(AIMessage(content=ai_response))
-else:
-    st.session_state.chat_history.append(HumanMessage(" "))
-    ai_response = "It looks like you canceled the entry midway. If you have any additional questions or need to discuss further please feel free to let me know and I'll be happy to help!"
-    st.session_state.chat_history.append(AIMessage(content=ai_response))
+if __name__ == '__main__':
+    app.run(debug=True)

@@ -10,3 +10,4 @@ edge_tts
 SpeechRecognition
 chromadb
 pyaudio
+pypdf
