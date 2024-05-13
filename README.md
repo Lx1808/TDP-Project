@@ -14,7 +14,7 @@ In the `Attempt 2`, I tried to create something more stable. I experimented with
 
 ## latest.py
 
-Please refer to the latest file if you are interested in contributing.
+Please refer to the latest file if you are interested in contributing. It is available on main branch too
 
 ## Conclusion
 
