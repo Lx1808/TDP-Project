@@ -23,7 +23,7 @@ from streamlit_feedback import streamlit_feedback
 
 os.environ['LANGCHAIN_TRACING_V2'] = 'false'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = 'YOUR-API-KEY'
+os.environ['LANGCHAIN_API_KEY'] = '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'
 load_dotenv()
 
 client = Client()
@@ -57,25 +57,25 @@ st.set_page_config(page_title="SwinburneFAQ Bot", page_icon="🤖")
 
 st.title("SwinburneFAQ Bot")
 
-# import the vector store
-# loader = WebBaseLoader(
-#    web_paths=("https://www.swinburneonline.edu.au/faqs/",),
-#    bs_kwargs=dict(
-#        parse_only=bs4.SoupStrainer(
-#            class_=("content", "card",)
-#        )
-#    ),
-# )
-# document = loader.load()
+# Load the document
+loader = WebBaseLoader(
+   web_paths=("https://www.swinburneonline.edu.au/faqs/",),
+   bs_kwargs=dict(
+       parse_only=bs4.SoupStrainer(
+           class_=("content", "card",)
+        )
+   ),
+)
+document = loader.load()
 llm = ChatOpenAI(temperature=0.1)
-# text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
-# texts = text_splitter.split_documents(document)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
+texts = text_splitter.split_documents(document)
 embedding = OpenAIEmbeddings()
 # Make splits
-# splits = text_splitter.split_documents(document)
+splits = text_splitter.split_documents(document)
 
-# vectorstore = Chroma.from_documents(documents=splits,
-#                                    embedding=OpenAIEmbeddings())
+vectorstore = Chroma.from_documents(documents=splits,
+                                   embedding=OpenAIEmbeddings())
 
 vectorstore = Chroma(persist_directory="./SwinburneFAQ", embedding_function=embedding)
 retriever = vectorstore.as_retriever()
@@ -87,11 +87,19 @@ from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptT
 examples = [
     {
         "input": "Who is the author of Harry Potter?",
-        "output": "I'd like to help you about educational inquiries, but we can talk about this after my shift.",
+        "output": "I apologize, but I am an educational advisor focused on assisting with inquiries related to Swinburne Online. If you have any questions about our programs, admissions, or student support, I'll be happy to help!",
     },
     {
         "input": "What is the biggest country?",
-        "output": "Let's focus on educational inquiries. Do you need any help with them?",
+        "output": "As an educational advisor, my expertise is in helping students with matters related to Swinburne Online. If you have any questions about our courses, enrollment process, or academic support, please let me know and I'll assist you to the best of my ability.",
+    },
+    {
+        "input": "What is the capital of France?",
+        "output": "While that's an interesting question, my role is to provide guidance and support for students interested in or currently studying with Swinburne Online. If you have any inquiries about our online programs, tuition fees, or how we can support your educational journey, please feel free to ask!",
+    },
+    {
+        "input": "Tell me a joke.",
+        "output": "I'd love to entertain you with a joke, but as an educational advisor, my primary focus is on helping students with their academic needs and questions about Swinburne Online. If there's anything I can assist you with regarding our programs, resources, or student life, please don't hesitate to ask!",
     },
 ]
 # We now transform these to example messages
@@ -105,7 +113,7 @@ few_shot_prompt = FewShotChatMessagePromptTemplate(
     example_prompt=example_prompt,
     examples=examples,
 )
-prompt_back = ChatPromptTemplate.from_messages(
+prompt_scope = ChatPromptTemplate.from_messages(
     [
         (
             "system",
@@ -121,7 +129,7 @@ prompt_back = ChatPromptTemplate.from_messages(
         ("user", "{user_question}"),
     ]
 )
-generate_queries_step_back = prompt_back | ChatOpenAI(temperature=0.5) | StrOutputParser()
+generate_queries_scope = prompt_scope | ChatOpenAI(temperature=0.1) | StrOutputParser()
 
 # PROMPT 2
 # Few Shot Examples
@@ -140,6 +148,18 @@ examples = [
         "input": "Can I find a job after?",
         "intent": "Evaluating potential career prospects and employability after graduation.",
     },
+    {
+        "input": "Who is the author of Harry Potter?",
+        "intent": "Out of scope: Asking about the author of a book series unrelated to Swinburne Online.",
+    },
+    {
+        "input": "What is the capital of France?",
+        "intent": "Out of scope: Inquiring about geography facts unrelated to Swinburne Online.",
+    },
+    {
+        "input": "Tell me a joke.",
+        "intent": "Out of scope: Requesting entertainment unrelated to educational matters at Swinburne Online.",
+    },
 ]
 # We now transform these to example messages
 example_prompt = ChatPromptTemplate.from_messages(
@@ -156,7 +176,10 @@ prompt_intent = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            """You are an experienced educational advisor at an online university. When a student asks you a question, you should first understand the intent behind the question. Here are a few examples:""",
+            """You are an experienced educational advisor at an online university. 
+            When a student asks you a question, you should first understand the intent behind the question. 
+            
+            Here are a few examples:""",
         ),
         # Few shot examples
         few_shot_prompt,
@@ -169,14 +192,17 @@ generate_queries_intent = prompt_intent | ChatOpenAI(temperature=0.5) | StrOutpu
 from langchain_core.runnables import RunnableLambda
 
 # Response prompt
-response_prompt_template = """You are the educational advisor of Swinburne online. 
-You are answering a student's question briefly based on the context provided. 
-Sound like human, be helpful, and show empathy.
+response_prompt_template = """You are the educational advisor of Swinburne Online. 
+When a student asks a question related to Swinburne Online, provide a concise answer based on the context provided.
+If the question is about a specific course or program, check if the context mentions it and provide relevant information.
+If the question is not related to education, as indicated by the intent context, 
+politely redirect the student to ask about education-related matters, 
+as shown in the out-of-scope examples. 
 
 # Chat History: {chat_history_str}
-# {context}
-# {step_back_context}
-# {intent_context}
+# Context: {context}
+# Out-of-Scope Context: {out_of_scope_context}
+# Intent Context: {intent_context}
 
 # Original Question: {user_question}
 # Answer:"""
@@ -196,7 +222,7 @@ def get_response(query, chat_history, vectorstore):
                 # Retrieve context using the normal question
                 "context": RunnableLambda(lambda x: x["user_question"]) | retriever,
                 # Retrieve context using the step-back question
-                "step_back_context": generate_queries_step_back | retriever,
+                "out_of_scope_context": generate_queries_scope | retriever,
                 # Retrieve context using the intent statement
                 "intent_context": generate_queries_intent | retriever,
                 # Pass on the question
@@ -211,10 +237,11 @@ def get_response(query, chat_history, vectorstore):
 
     return chain.stream({
         "context": context_str,
+        "step_back_context": context_str,  
+        "intent_context": context_str,  
         "chat_history": chat_history_str,
         "user_question": query
     })
-
 
 # conversation
 for message in st.session_state.chat_history:
