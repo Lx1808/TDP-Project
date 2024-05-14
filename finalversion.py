@@ -237,7 +237,7 @@ def get_response(query, chat_history, vectorstore):
 
     return chain.stream({
         "context": context_str,
-        "step_back_context": context_str,  
+        "out_of_scope_context": context_str,  
         "intent_context": context_str,  
         "chat_history": chat_history_str,
         "user_question": query
