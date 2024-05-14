@@ -11,3 +11,4 @@ SpeechRecognition
 chromadb
 pyaudio
 pypdf
+mysql-connector-python

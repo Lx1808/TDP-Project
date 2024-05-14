@@ -2,20 +2,39 @@
 <html>
   <head>
     <title>SwinburneFAQ Bot</title>
+    <link rel="stylesheet" href="./static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
   </head>
   <body>
     <div id="app">
       <h1>SwinburneFAQ Bot</h1>
-      <div>
-        <input v-model="query" placeholder="Enter your message" />
-        <button @click="sendQuery">Send</button>
+      <div class="chat-input-container">
+        <div class="input-container">
+          <input v-model="query" placeholder="Enter your message" />
+          <button @click="sendQuery" :disabled="!query || isSending" :class="{ 'loading': isSending }">
+            <span v-if="!isSending">Send</span>
+            <div v-else class="loading-spinner"></div>
+          </button>
+        </div>
+        <div class="similar-questions" v-if="showSimilarQuestions" :class="{ show: showSimilarQuestions }">
+          <ul>
+            <li v-for="question in similarQuestions" @click="fillInput(question.text)">{{ question.text }}</li>
+          </ul>
+        </div>
       </div>
-      <div>
+      <div ref="chatContainer" class="chat-container">
         <ul>
           <li v-for="message in chatHistory">
             <strong>{{ message.sender }}:</strong> {{ message.content }}
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar">
+        <h2>Top 5 Questions</h2>
+        <ul>
+          <li v-for="(question, index) in topQuestions" :key="index" @click="sendQuery(question.question_text)">
+            {{ question.question_text }}
           </li>
         </ul>
       </div>
@@ -24,24 +43,80 @@
     <script>
       new Vue({
         el: '#app',
+        mounted() {
+            this.fetchTopQuestions();
+        },
         data: {
           query: '',
-          chatHistory: []
+          chatHistory: [],
+          similarQuestions: [],
+          isFillingInput: false,
+          isSending: false,
+          topQuestions: []
+        },
+        computed: {
+          showSimilarQuestions() {
+            return this.query.trim().length > 0 && this.similarQuestions.length > 0;
+          }
         },
         methods: {
-          async sendQuery() {
+          async sendQuery(question = null) {
+            let query = question ? question : this.query;
+            this.isSending = true;
             const response = await axios.post('http://127.0.0.1:5000/get_response', {
-              query: this.query
+              query: query
             });
             this.chatHistory.push({
               sender: 'Human',
-              content: this.query
+              content: query
             });
             this.chatHistory.push({
               sender: 'AI',
               content: response.data.response
             });
             this.query = '';
+            this.isSending = false;
+            this.$nextTick(() => {
+              this.scrollToBottom();
+              this.fetchTopQuestions();
+            });
+          },
+          async fetchSimilarQuestions() {
+            if (!this.isFillingInput) {
+              try {
+                const response = await axios.post('http://127.0.0.1:5000/get_similar_questions', { query: this.query });
+                this.similarQuestions = response.data.similar_questions;
+              } catch (error) {
+                console.error('Error fetching similar questions:', error);
+              }
+            }
+            this.isFillingInput = false;
+          },
+          fillInput(question) {
+            this.query = question;
+            this.similarQuestions = [];
+            this.isFillingInput = true;
+          },
+          scrollToBottom() {
+            this.$refs.chatContainer.scrollTop = this.$refs.chatContainer.scrollHeight;
+          },
+          async fetchTopQuestions() {
+            try {
+              const response = await axios.get('http://127.0.0.1:5000/top_questions');
+              this.topQuestions = response.data.top_questions;
+            } catch (error) {
+              console.error('Error fetching top questions:', error);
+            }
+          }
+        },
+        watch: {
+          query(newValue) {
+            if(newValue.trim().length !== 0) {
+                clearTimeout(this.queryTimeout);
+                this.queryTimeout = setTimeout(() => {
+                this.fetchSimilarQuestions();
+                }, 750);
+            }
           }
         }
       });
