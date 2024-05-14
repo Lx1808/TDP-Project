@@ -109,12 +109,6 @@ vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embe
 @app.route('/get_response', methods=['POST'])
 def get_response():
     
-    # input_text = "生活啊"
-    # detected_lang = ts.detect_language(input_text)
-    # print(f"Detected language: {detected_lang}")
-    # french_translation = ts.translate(input_text, "fr")
-    # print(f"French translation: {french_translation}")
-
     data = request.get_json()
     query = data['query']
     print("query:",query)
@@ -124,9 +118,9 @@ def get_response():
     print('++++-----------------------------++++')
     print("response:",response)
     target_language = ts.detect_language(query)
+    print("target_language:",target_language)
     if(not target_language=="en"):
-         new_response = ts.translate(response, target_language)
-        #  new_response=response+"\n"+response_translated
+        new_response = ts.translate(response, target_language)
     else:
         new_response=response
     print("new_response:",new_response)

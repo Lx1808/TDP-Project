@@ -4,22 +4,89 @@
     <title>SwinburneFAQ Bot</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
+    <style>    /* 设置body背景颜色和字体 */
+      body {
+        background-color: #f5f5f5;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      
+      /* 设置标题样式 */
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      
+      /* 设置聊天框样式 */
+      #chat-box {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+        overflow-y: scroll; /* 添加此行 */
+        max-height: 350px; /* 添加此行，设置最大高度以限制滚动条出现的高度 */
+      }
+      
+      /* 设置消息气泡样式 */
+      #chat-box li {
+        list-style-type: none;
+        padding: 8px 16px;
+        border-radius: 16px;
+        margin-bottom: 8px;
+      }
+      
+      #chat-box li:nth-child(odd) {
+        background-color: #e6e6e6;
+        margin-right: 40px;
+      }
+      
+      #chat-box li:nth-child(even) {
+        background-color: #b3e6ff;
+        margin-left: 40px;
+      }
+      
+      /* 设置输入框和按钮样式 */
+      .bottom {
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+      }
+      
+      #message-input {
+        /* flex-grow: 1; */
+        width: 650px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid #ccc;
+      }
+      
+      button {
+        margin-left: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background-color: #4CAF50;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+      }</style>
   </head>
   <body>
     <div id="app">
       <h1>SwinburneFAQ Bot</h1>
-      <div>
-        <input v-model="query" placeholder="Enter your message" />
-        <button @click="sendQuery">Send</button>
-      </div>
-      <div>
+      <div id="chat-box" :style="{ display: chatBoxDisplay }">
         <ul>
           <li v-for="message in chatHistory">
             <strong>{{ message.sender }}:</strong> {{ message.content }}
           </li>
         </ul>
       </div>
+      <div class="bottom">
+        <input id="message-input" v-model="query" placeholder="Enter your message" />
+        <button @click="sendQuery">Send</button>
+      </div>
     </div>
+
 
     <script>
       new Vue({
@@ -27,6 +94,11 @@
         data: {
           query: '',
           chatHistory: []
+        },
+        computed: {
+          chatBoxDisplay() {
+            return this.chatHistory.length === 0 ? 'none' : 'block';
+          }
         },
         methods: {
           async sendQuery() {
@@ -42,6 +114,11 @@
               content: response.data.response
             });
             this.query = '';
+            // 滚动到底部
+            this.$nextTick(() => {
+            const chatBox = document.getElementById('chat-box');
+            chatBox.scrollTop = chatBox.scrollHeight;
+            });
           }
         }
       });
