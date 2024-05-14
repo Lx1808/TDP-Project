@@ -21,9 +21,10 @@ from langchain.callbacks.manager import collect_runs
 from langsmith import Client
 from streamlit_feedback import streamlit_feedback
 
-os.environ['LANGCHAIN_TRACING_V2'] = 'false'
+os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = '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'
+os.environ['LANGCHAIN_API_KEY'] = 'API KEY'
+
 load_dotenv()
 
 client = Client()
@@ -59,7 +60,7 @@ st.title("SwinburneFAQ Bot")
 
 # Load the document
 loader = WebBaseLoader(
-   web_paths=("https://www.swinburneonline.edu.au/faqs/",),
+   web_paths=("https://www.swinburneonline.edu.au/faqs/", "https://www.swinburneonline.edu.au/"),
    bs_kwargs=dict(
        parse_only=bs4.SoupStrainer(
            class_=("content", "card",)
@@ -160,6 +161,18 @@ examples = [
         "input": "Tell me a joke.",
         "intent": "Out of scope: Requesting entertainment unrelated to educational matters at Swinburne Online.",
     },
+    {
+        "input": "Who wrote the book 'Pride and Prejudice'?",
+        "intent": "Out of scope: Asking about the author of a book unrelated to Swinburne Online.",
+    },
+    {
+        "input": "What is the largest continent in the world?",
+        "intent": "Out of scope: Inquiring about geography facts unrelated to Swinburne Online.",
+    },
+    {
+        "input": "Can you recommend a good movie to watch?",
+        "intent": "Out of scope: Requesting entertainment recommendations unrelated to educational matters at Swinburne Online.",
+    },
 ]
 # We now transform these to example messages
 example_prompt = ChatPromptTemplate.from_messages(
@@ -187,23 +200,29 @@ prompt_intent = ChatPromptTemplate.from_messages(
         ("user", "{user_question}"),
     ]
 )
-generate_queries_intent = prompt_intent | ChatOpenAI(temperature=0.5) | StrOutputParser()
+generate_queries_intent = prompt_intent | ChatOpenAI(temperature=0.7) | StrOutputParser()
 
 from langchain_core.runnables import RunnableLambda
 
 # Response prompt
 response_prompt_template = """You are the educational advisor of Swinburne Online. 
-When a student asks a question related to Swinburne Online, provide a concise answer based on the context provided.
-If the question is about a specific course or program, check if the context mentions it and provide relevant information.
-If the question is not related to education, as indicated by the intent context, 
-politely redirect the student to ask about education-related matters, 
-as shown in the out-of-scope examples. 
+When a student asks a question related to Swinburne Online, provide a helpful answer based on the context provided.
 
-# Chat History: {chat_history_str}
-# Context: {context}
-# Out-of-Scope Context: {out_of_scope_context}
+First, analyse the intent context and see how you can help the student. 
+If the question is out-of-scope, humorously redirect the student to ask about education-related matters.:
 # Intent Context: {intent_context}
 
+If the intent context indicates that the question is out-of-scope 
+(i.e., not related to Swinburne Online or education), 
+politely distract the attention to ask about education-related matters, as shown in the out-of-scope examples:
+# Out-of-Scope Context: {out_of_scope_context}
+
+If the intent context suggests that the question is 
+in-scope, 
+give a helpful and detailed answer based on the main context:
+# Context: {context}
+
+# Chat History: {chat_history_str}
 # Original Question: {user_question}
 # Answer:"""
 response_prompt = ChatPromptTemplate.from_template(response_prompt_template)
@@ -237,7 +256,7 @@ def get_response(query, chat_history, vectorstore):
 
     return chain.stream({
         "context": context_str,
-        "step_back_context": context_str,  
+        "out_of_scope_context": context_str,  
         "intent_context": context_str,  
         "chat_history": chat_history_str,
         "user_question": query
