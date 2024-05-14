@@ -111,8 +111,6 @@ def get_response():
     chat_history = session.get('chat_history', [])
     chat_history.append({'sender': 'Human', 'content': query})
     response = query_and_respond(query, chat_history, vectorstore)
-    print('++++-----++++')
-    print(response)
     chat_history.append({'sender': 'AI', 'content': response})
 
     return jsonify({'response': response})
