@@ -12,7 +12,7 @@
       <div class="chat-input-container">
         <div class="input-container">
           <input v-model="query" placeholder="Enter your message" />
-          <button @click="sendQuery" :disabled="!query || isSending" :class="{ 'loading': isSending }">
+          <button @click="sendQuery()" :disabled="!query || isSending" :class="{ 'loading': isSending }">
             <span v-if="!isSending">Send</span>
             <div v-else class="loading-spinner"></div>
           </button>
