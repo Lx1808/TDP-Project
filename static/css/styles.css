@@ -144,10 +144,10 @@ li {
     margin-bottom: 10px;
 }
 
-li:nth-child(odd) {
+.chat-container ul li:nth-child(odd) {
     background-color: #f2f2f2;
 }
-li:nth-child(even) {
+.chat-container ul li:nth-child(even) {
   background-color: #b3e6ff;
 }
 li strong {
