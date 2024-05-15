@@ -6,8 +6,9 @@ import speech_recognition as sr
 import torch
 import torch.nn.functional as F
 import json
-
 import translator as ts
+import mysql.connector
+import yaml
 from flask import Flask, request, jsonify, session
 from transformers import AutoTokenizer, AutoModel
 from langchain_core.messages import HumanMessage, AIMessage
@@ -70,16 +71,28 @@ def compute_similarity_scores(user_input, question_embeddings, questions):
     similarity_scores = F.cosine_similarity(user_input_embedding, question_embeddings)
     return similarity_scores
 
-def recommend_similar_questions():
-    user_input = st.session_state.user_input
-    if not user_input:
-        return []
-    similarity_scores = compute_similarity_scores(user_input, question_embeddings, processed_questions)
-    top_indices = similarity_scores.topk(5).indices
-    top_questions = [questions[idx] for idx in top_indices]
-    return top_questions
+def load_database_config():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, 'database.yml')
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return config
 
-
+def insert_or_update_question(question_text):
+    config = load_database_config()
+    connection = mysql.connector.connect(**config['development'])
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, question_count FROM questions WHERE question_text = %s", (question_text,))
+    existing_question = cursor.fetchone()
+    if existing_question:
+        question_id, question_count = existing_question
+        question_count += 1
+        cursor.execute("UPDATE questions SET question_count = %s WHERE id = %s", (question_count, question_id))
+    else:
+        cursor.execute("INSERT INTO questions (question_text, question_count) VALUES (%s, 1)", (question_text,))
+    connection.commit()
+    cursor.close()
+    connection.close()
 
 app = Flask(__name__)
 CORS(app)
@@ -106,26 +119,48 @@ question_embeddings = compute_sentence_embeddings(processed_questions)
 embedding = OpenAIEmbeddings()
 vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embedding)
 
-@app.route('/get_response', methods=['POST'])
-def get_response():
-    
+@app.route('/top_questions')
+def top_questions():
+    config = load_database_config()
+    connection = mysql.connector.connect(**config['development'])
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT question_text FROM questions ORDER BY question_count DESC LIMIT 5")
+    top_questions = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return jsonify({'top_questions': top_questions})
+
+@app.route('/get_similar_questions', methods=['POST'])
+def get_similar_questions():
     data = request.get_json()
     query = data['query']
-    print("query:",query)
-    chat_history = session.get('chat_history', [])
-    chat_history.append({'sender': 'Human', 'content': query})
-    response = query_and_respond(query, chat_history, vectorstore)
-    print('++++-----------------------------++++')
-    print("response:",response)
-    target_language = ts.detect_language(query)
-    print("target_language:",target_language)
-    if(not target_language=="en"):
-        new_response = ts.translate(response, target_language)
+    similarity_scores = compute_similarity_scores(query, question_embeddings, processed_questions)
+    similar_questions = []
+    for score, question, original_question in sorted(zip(similarity_scores, processed_questions, questions), reverse=True)[:3]:
+        similar_questions.append({
+            'text': original_question,
+            'score': float(score)
+        })
+    return jsonify({'similar_questions': similar_questions})
+
+@app.route('/get_response', methods=['POST'])
+def get_response():
+    data = request.get_json()
+    query = data.get('query', '').strip()
+    if not query:
+        return jsonify({'response': "It looks like you canceled the entry midway. If you have any additional questions or need to discuss further please feel free to let me know and I'll be happy to help!"})
     else:
-        new_response=response
-    print("new_response:",new_response)
-    chat_history.append({'sender': 'AI', 'content': new_response})
-    return jsonify({'response': new_response})
+        chat_history = session.get('chat_history', [])
+        chat_history.append({'sender': 'Human', 'content': query})
+        similarity_scores = compute_similarity_scores(query, question_embeddings, processed_questions)
+        max_similarity_score = max(similarity_scores)
+        if max_similarity_score > 0.9:
+            index = torch.argmax(torch.tensor(similarity_scores))  # 使用 torch.argmax 获取最大值索引
+            similar_question_text = processed_questions[index]
+            insert_or_update_question(similar_question_text)
+        response = query_and_respond(query, chat_history, vectorstore)
+        chat_history.append({'sender': 'AI', 'content': response})
+        return jsonify({'response': response})
 
 def query_and_respond(query, chat_history, vectorstore):
     template = """

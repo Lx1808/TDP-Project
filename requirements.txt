@@ -12,3 +12,4 @@ chromadb
 pyaudio
 pypdf
 sentencepiece
+mysql-connector-python
