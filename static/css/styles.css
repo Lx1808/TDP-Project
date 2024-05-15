@@ -11,7 +11,7 @@ body {
 }
 
 .chat-container {
-    max-height: 700px;
+    max-height: 450px;
     overflow-y: auto;
 }
 .sidebar {
