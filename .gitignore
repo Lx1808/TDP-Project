@@ -1,3 +1,4 @@
 SwinburneFAQ/
 .idea/
 *.mp3
+__pycache__/
