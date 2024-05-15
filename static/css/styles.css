@@ -14,7 +14,6 @@ body {
     max-height: 700px;
     overflow-y: auto;
 }
-
 .sidebar {
     width: 300px; /* 侧边栏宽度 */
     height: 100%; /* 充满整个高度 */
@@ -148,7 +147,9 @@ li {
 li:nth-child(odd) {
     background-color: #f2f2f2;
 }
-
+li:nth-child(even) {
+  background-color: #b3e6ff;
+}
 li strong {
     margin-right: 10px;
 }

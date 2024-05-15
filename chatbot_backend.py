@@ -146,10 +146,12 @@ def get_similar_questions():
 @app.route('/get_response', methods=['POST'])
 def get_response():
     data = request.get_json()
+    enable_multilingual = data.get('enableMultiLingual', False)
     query = data.get('query', '').strip()
+    print("query",query)
     if not query:
         return jsonify({'response': "It looks like you canceled the entry midway. If you have any additional questions or need to discuss further please feel free to let me know and I'll be happy to help!"})
-    else:
+    else:  
         chat_history = session.get('chat_history', [])
         chat_history.append({'sender': 'Human', 'content': query})
         similarity_scores = compute_similarity_scores(query, question_embeddings, processed_questions)
@@ -159,6 +161,9 @@ def get_response():
             similar_question_text = processed_questions[index]
             insert_or_update_question(similar_question_text)
         response = query_and_respond(query, chat_history, vectorstore)
+        if(enable_multilingual):
+            target_language=ts.detect_language(query)
+            response=ts.translate(response,target_language)
         chat_history.append({'sender': 'AI', 'content': response})
         return jsonify({'response': response})
 
