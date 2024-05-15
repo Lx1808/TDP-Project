@@ -2,5 +2,5 @@ development:
   host: 'localhost'
   port: 3306
   username: 'root'
-  password: 'root'
+  password: 'shabi110.abc'
   database: 'chat_bot'

@@ -19,6 +19,8 @@ def detect_language(text):
 
 def translate(text, target_lang):
     print("text: ",text," target_lang: ",target_lang)
+    if(target_lang=="en"):
+        return text
     translate_tokenizer.src_lang = detect_language(text)
     encoded_input = translate_tokenizer(text, return_tensors="pt")
     output_ids = translate_model.generate(**encoded_input, forced_bos_token_id=translate_tokenizer.get_lang_id(target_lang))
