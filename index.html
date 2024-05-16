@@ -16,10 +16,6 @@
             <span v-if="!isSending">Send</span>
             <div v-else class="loading-spinner"></div>
           </button>
-          <!-- <button @click="toggleRecording" :disabled="!supportsSpeechRecognition" class="recording-btn">
-            <span v-if="!isRecording">Talking</span>
-            <span v-else>Stop Talking</span>
-          </button> -->
           <button @click="toggleRecording" :disabled="!supportsSpeechRecognition" class="recording-btn" :class="{ recording: isRecording }">
             {{ isRecording ? 'Stop' : 'Talk' }}
           </button>
@@ -35,14 +31,17 @@
           </ul>
         </div>
       </div>
-      <div ref="chatContainer" class="chat-container">
-        <ul>
-          <li v-for="message in chatHistory">
-            <strong>{{ message.sender }}:</strong> {{ message.content }}
-            <audio v-if="message.speech_output" :src="message.speech_output" controls></audio>
-          </li>
-        </ul>
+      <div class="container">
+        <div ref="chatContainer" class="chat-container">
+          <ul>
+            <li v-for="message in chatHistory">
+              <strong>{{ message.sender }}:</strong> {{ message.content }}
+              <audio v-if="message.speech_output" :src="message.speech_output" controls></audio>
+            </li>
+          </ul>
+        </div>
       </div>
+      
       <div class="sidebar">
         <h2>Top 5 Questions</h2>
         <ul>
