@@ -5,7 +5,6 @@
     <link rel="stylesheet" href="./static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
-
   </head>
   <body>
     <div id="app">
@@ -13,9 +12,16 @@
       <div class="chat-input-container">
         <div class="input-container">
           <input v-model="query" placeholder="Enter your message" />
-          <button @click="sendQuery()" :disabled="!query || isSending" :class="{ 'loading': isSending }">
+          <button @click="sendQuery()" :disabled="!query || isSending" :class="{ 'loading': isSending }" class="sending-btn">
             <span v-if="!isSending">Send</span>
             <div v-else class="loading-spinner"></div>
+          </button>
+          <!-- <button @click="toggleRecording" :disabled="!supportsSpeechRecognition" class="recording-btn">
+            <span v-if="!isRecording">Talking</span>
+            <span v-else>Stop Talking</span>
+          </button> -->
+          <button @click="toggleRecording" :disabled="!supportsSpeechRecognition" class="recording-btn" :class="{ recording: isRecording }">
+            Talking
           </button>
           <div>
             <label>
@@ -30,14 +36,12 @@
         </div>
       </div>
       <div ref="chatContainer" class="chat-container">
-
         <ul>
           <li v-for="message in chatHistory">
             <strong>{{ message.sender }}:</strong> {{ message.content }}
           </li>
         </ul>
       </div>
-
       <div class="sidebar">
         <h2>Top 5 Questions</h2>
         <ul>
@@ -48,12 +52,12 @@
       </div>
     </div>
 
-
     <script>
       new Vue({
         el: '#app',
         mounted() {
-            this.fetchTopQuestions();
+          this.fetchTopQuestions();
+          this.generateTextFromVocie();
         },
         data: {
           query: '',
@@ -62,7 +66,10 @@
           isFillingInput: false,
           isSending: false,
           topQuestions: [],
-          enableMultiLingual: false 
+          enableMultiLingual: false,
+          isRecording: false,
+          recognition: null,
+          supportsSpeechRecognition: false,
         },
         computed: {
           showSimilarQuestions() {
@@ -121,7 +128,35 @@
             } catch (error) {
               console.error('Error fetching top questions:', error);
             }
-          }
+          },
+          async generateTextFromVocie(){
+            this.supportsSpeechRecognition = 'webkitSpeechRecognition' in window;
+            if (this.supportsSpeechRecognition) {
+            this.recognition = new window.webkitSpeechRecognition();
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+            this.recognition.onresult = (event) => {
+            let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                  const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                  finalTranscript += transcript + ' ';
+                }
+              }
+            this.query = finalTranscript.trim();
+          };
+        }
+      },
+          toggleRecording() {
+            if (this.isRecording) {
+              this.recognition.stop();
+              this.isRecording = false;
+            } else {
+              this.recognition.start();
+              this.isRecording = true;
+            }
+          },
         },
         watch: {
           query(newValue) {
