@@ -67,9 +67,7 @@
         computed: {
           showSimilarQuestions() {
             return this.query.trim().length > 0 && this.similarQuestions.length > 0;
-          }
-        },
-        computed: {
+          },
           chatBoxDisplay() {
             return this.chatHistory.length === 0 ? 'none' : 'block';
           }
