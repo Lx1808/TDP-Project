@@ -11,18 +11,13 @@ import mysql.connector
 import yaml
 from flask import Flask, request, jsonify, session
 from transformers import AutoTokenizer, AutoModel
-from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
 from dotenv import load_dotenv
 from flask_cors import CORS
-from langdetect import detect
 load_dotenv()
 
 def recognize_speech():

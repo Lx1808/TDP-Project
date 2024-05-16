@@ -21,7 +21,7 @@
             <span v-else>Stop Talking</span>
           </button> -->
           <button @click="toggleRecording" :disabled="!supportsSpeechRecognition" class="recording-btn" :class="{ recording: isRecording }">
-            {{ isRecording ? 'Stop' : 'Talking' }}
+            {{ isRecording ? 'Stop' : 'Talk' }}
           </button>
           <div>
             <label>
