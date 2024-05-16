@@ -2,3 +2,6 @@ SwinburneFAQ/
 .idea/
 *.mp3
 __pycache__/
+database.yml
+static/.DS_Store
+.DS_Store
