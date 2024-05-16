@@ -119,6 +119,25 @@ question_embeddings = compute_sentence_embeddings(processed_questions)
 embedding = OpenAIEmbeddings()
 vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embedding)
 
+def recognize_speech():
+    r = sr.Recognizer()
+    mic = sr.Microphone()
+    with mic as source:
+        audio = r.listen(source, 10, 10)
+        try:
+            return r.recognize_google(audio)
+        except sr.UnknownValueError:
+            return "I can't understand you."
+        except sr.RequestError:
+            return "Time out!"
+
+def generate_speech(text, voice='en-US-JessaNeural', rate=20, pitch=0, output_file='output.mp3'):
+    rate_str = f"{rate:+}%"
+    pitch_str = f"{pitch:+}Hz"
+    communicate = edge_tts.Communicate(text, voice, rate=rate_str, pitch=pitch_str)
+    asyncio.run(communicate.save(output_file))
+    return output_file
+
 @app.route('/top_questions')
 def top_questions():
     config = load_database_config()
@@ -147,6 +166,7 @@ def get_similar_questions():
 def get_response():
     data = request.get_json()
     enable_multilingual = data.get('enableMultiLingual', False)
+    is_speech_input = data.get('isSpeechInput', False) 
     query = data.get('query', '').strip()
     print("query",query)
     if not query:
@@ -164,6 +184,10 @@ def get_response():
         if(enable_multilingual):
             target_language=ts.detect_language(query)
             response=ts.translate(response,target_language)
+        if(is_speech_input):
+            speech_output = generate_speech(response)
+            chat_history.append({'sender': 'AI', 'content': response, 'speech_output': speech_output})
+            return jsonify({'response': response, 'is_speech_output': is_speech_input})
         chat_history.append({'sender': 'AI', 'content': response})
         return jsonify({'response': response})
 

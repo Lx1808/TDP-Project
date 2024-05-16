@@ -213,3 +213,7 @@ li strong {
   background-color: #2196f3; 
   color: #fff;
 }
+audio{
+  margin-top: 10px;
+  height:30px;
+}

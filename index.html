@@ -39,13 +39,14 @@
         <ul>
           <li v-for="message in chatHistory">
             <strong>{{ message.sender }}:</strong> {{ message.content }}
+            <audio v-if="message.speech_output" :src="message.speech_output" controls></audio>
           </li>
         </ul>
       </div>
       <div class="sidebar">
         <h2>Top 5 Questions</h2>
         <ul>
-          <li v-for="(question, index) in topQuestions" :key="index" @click="sendQuery(question.question_text)">
+          <li v-for="(question, index) in topQuestions" :key="index" @click="sendQuery(question.question_text,false)">
             {{ question.question_text }}
           </li>
         </ul>
@@ -70,6 +71,7 @@
           isRecording: false,
           recognition: null,
           supportsSpeechRecognition: false,
+          isSpeechInput:false//default status is false, not using voice
         },
         computed: {
           showSimilarQuestions() {
@@ -80,12 +82,13 @@
           }
         },
         methods: {
-          async sendQuery(question = null) {
+          async sendQuery(question = null,isSpeechInput = this.isSpeechInput) {
             let query = question ? question : this.query;
             this.isSending = true;
             const response = await axios.post('http://127.0.0.1:5000/get_response', {
               query: query,
-              enableMultiLingual: this.enableMultiLingual
+              enableMultiLingual: this.enableMultiLingual,
+              isSpeechInput: isSpeechInput
             });
             this.chatHistory.push({
               sender: 'Human',
@@ -93,13 +96,16 @@
             });
             this.chatHistory.push({
               sender: 'AI',
-              content: response.data.response
+              content: response.data.response,
+              speech_output: response.data.is_speech_output ? 'output.mp3' : null
             });
             this.query = '';
             this.isSending = false;
             this.$nextTick(() => {
               this.scrollToBottom();
               this.fetchTopQuestions();
+              //when voice has been generated and send, isSpeechInput should be false again
+              this.isSpeechInput=false;
             });
           },
           async fetchSimilarQuestions() {
@@ -145,6 +151,9 @@
                 }
               }
             this.query = finalTranscript.trim();
+            if(this.query!=""||this.query){
+              this.isSpeechInput=true;
+            }
           };
         }
       },
