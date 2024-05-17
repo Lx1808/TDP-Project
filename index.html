@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>SwinburneFAQ Bot</title>
     <link rel="stylesheet" href="./static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
-  </head>
-  <body>
-    <div id="app">
-      <h1>SwinburneFAQ Bot</h1>
-      <div class="chat-input-container">
+</head>
+<body>
+<div id="app">
+    <h1>SwinburneFAQ Bot</h1>
+    <div class="chat-input-container">
         <div class="input-container">
           <input v-model="query" placeholder="Enter your message" />
           <button @click="sendQuery()" :disabled="!query || isSending" :class="{ 'loading': isSending }" class="sending-btn">
@@ -26,9 +26,9 @@
           </div>
         </div>
         <div class="similar-questions" v-if="showSimilarQuestions" :class="{ show: showSimilarQuestions }">
-          <ul>
-            <li v-for="question in similarQuestions" @click="fillInput(question.text)">{{ question.text }}</li>
-          </ul>
+            <ul>
+                <li v-for="question in similarQuestions" @click="fillInput(question.text)">{{ question.text }}</li>
+            </ul>
         </div>
       </div>
       <div class="container">
@@ -45,138 +45,204 @@
       <div class="sidebar">
         <h2>Top 5 Questions</h2>
         <ul>
-          <li v-for="(question, index) in topQuestions" :key="index" @click="sendQuery(question.question_text,false)">
-            {{ question.question_text }}
-          </li>
+            <li v-for="(question, index) in topQuestions" :key="index" @click="sendQuery(question.question_text, false)">
+                {{ question.question_text }}
+            </li>
         </ul>
-      </div>
+    </div>
+    <!-- 新增的随机问题部分 -->
+    <div class="random-questions">
+        <button @click="fetchRandomQuestions()">Refresh Question</button>
+        <h2>Guessing You Want</h2>
+        <ul>
+            <li v-for="question in randomQuestions" @click="showAnswer(question)" :key="question">
+                {{ question }}
+            </li>
+        </ul>
     </div>
 
-    <script>
-      new Vue({
-        el: '#app',
-        mounted() {
-          this.fetchTopQuestions();
-          this.generateTextFromVocie();
-        },
-        data: {
-          query: '',
-          chatHistory: [],
-          similarQuestions: [],
-          isFillingInput: false,
-          isSending: false,
-          topQuestions: [],
-          enableMultiLingual: false,
-          isRecording: false,
-          recognition: null,
-          supportsSpeechRecognition: false,
-          isSpeechInput:false//default status is false, not using voice
-        },
-        computed: {
-          showSimilarQuestions() {
+    <!-- 留言板区域 -->
+    <div class="comment-section">
+      <h1>Message Board</h1>
+      <form @submit.prevent="submitComment">
+          <textarea v-model="commentContent" placeholder="Please enter your word here" required></textarea>
+          <button type="submit">Submit</button>
+      </form>
+    </div>
+</div>
+
+<script>
+new Vue({
+    el: '#app',
+    mounted() {
+        this.fetchTopQuestions(); // 获取最常见问题列表
+        this.generateTextFromVoice(); // 初始化语音识别
+        this.fetchTopics(); // 获取话题列表
+        this.fetchRandomQuestions(); // 初始化时获取随机问题
+    },
+    data: {
+        topics: [], // 存放话题数据
+        newTopicName: '', // 新话题的名称
+        selectedTopicId: '', // 选中的话题ID
+        query: '', // 用户输入的查询
+        chatHistory: [], // 聊天历史记录
+        similarQuestions: [], // 相似问题列表
+        isFillingInput: false, // 标记是否正在自动填充输入
+        isSending: false, // 标记是否正在发送查询
+        topQuestions: [], // 最常见问题列表
+        enableMultiLingual: false, // 是否启用多语言支持
+        isRecording: false, // 标记是否正在录音
+        recognition: null, // 语音识别实例
+        supportsSpeechRecognition: false, // 是否支持语音识别
+        isSpeechInput: false, // 是否为语音输入
+        randomQuestions: [], // 用来存放随机问题
+        randomAnswers: {}, // 用来映射问题到答案
+        commentContent: ''//用戶輸入的框
+    },
+    computed: {
+        showSimilarQuestions() {
             return this.query.trim().length > 0 && this.similarQuestions.length > 0;
-          },
-          chatBoxDisplay() {
-            return this.chatHistory.length === 0 ? 'none' : 'block';
-          }
         },
-        methods: {
-          async sendQuery(question = null,isSpeechInput = this.isSpeechInput) {
+        chatBoxDisplay() {
+            return this.chatHistory.length === 0 ? 'none' : 'block';
+        }
+    },
+    methods: {
+        submitComment() {
+            // 发送 POST 请求到后端 API
+            axios.post('http://127.0.0.1:5000/comments', {
+                content: this.commentContent
+                })
+                .then(response => {
+                    alert('Message Saved');
+                    this.commentContent = ''; // 清空输入框
+                })
+                .catch(error => {
+                    console.error('Saved Error', error);
+                    alert('Saved Faild');
+                });
+        },
+        fetchTopQuestions() {
+            axios.get('http://127.0.0.1:5000/top_questions')
+                .then(response => {
+                    this.topQuestions = response.data.top_questions;
+                })
+                .catch(error => {
+                    console.error('Error fetching top questions:', error);
+                });
+        },
+        sendQuery(question = null, isSpeechInput = this.isSpeechInput) {
             let query = question ? question : this.query;
             this.isSending = true;
-            const response = await axios.post('http://127.0.0.1:5000/get_response', {
-              query: query,
-              enableMultiLingual: this.enableMultiLingual,
-              isSpeechInput: isSpeechInput
+            axios.post('http://127.0.0.1:5000/get_response', {
+                query: query,
+                topic_id: this.selectedTopicId,
+                enableMultiLingual: this.enableMultiLingual,
+                isSpeechInput: isSpeechInput
+            }).then(response => {
+                this.chatHistory.push({
+                    sender: 'Human',
+                    content: query
+                });
+                this.chatHistory.push({
+                    sender: 'AI',
+                    content: response.data.response,
+                    speech_output: response.data.is_speech_output ? 'output.mp3' : null
+                });
+                this.query = '';
+                this.isSending = false;
+                this.$nextTick(() => {
+                    this.scrollToBottom(); // 滚动到聊天框底部
+                    this.fetchTopQuestions(); // 重新获取最常见问题
+                    this.isSpeechInput = false; // 重置语音输入状态
+                });
+            }).catch(error => {
+                console.error('Error sending query:', error);
             });
-            this.chatHistory.push({
-              sender: 'Human',
-              content: query
-            });
-            this.chatHistory.push({
-              sender: 'AI',
-              content: response.data.response,
-              speech_output: response.data.is_speech_output ? 'output.mp3' : null
-            });
-            this.query = '';
-            this.isSending = false;
-            this.$nextTick(() => {
-              this.scrollToBottom();
-              this.fetchTopQuestions();
-              //when voice has been generated and send, isSpeechInput should be false again
-              this.isSpeechInput=false;
-            });
-          },
-          async fetchSimilarQuestions() {
-            if (!this.isFillingInput) {
-              try {
-                const response = await axios.post('http://127.0.0.1:5000/get_similar_questions', { query: this.query });
-                this.similarQuestions = response.data.similar_questions;
-              } catch (error) {
-                console.error('Error fetching similar questions:', error);
-              }
-            }
-            this.isFillingInput = false;
-          },
-          fillInput(question) {
-            this.query = question;
-            this.similarQuestions = [];
-            this.isFillingInput = true;
-          },
-          scrollToBottom() {
+        },
+
+        //Jerry
+        //在加載出來頁面時就刷新出來四個問題
+        fetchTopics() {
+            console.log('Fetching topics...');
+            axios.get('/data.json') // 直接指定 JSON 文件的路径
+                .then(response => {
+                    this.topics = response.data; // 直接将返回的数组赋值给topics
+                })
+                .catch(error => {
+                    console.error('Error fetching topics:', error);
+                });
+        },
+        //獲取隨機的四個問題
+        fetchRandomQuestions() {
+            axios.get('http://127.0.0.1:5000/get_random_questions')
+                .then(response => {
+                    this.randomQuestions = response.data.map(item => item.question);
+                    this.randomAnswers = {};
+                    response.data.forEach(item => {
+                        this.randomAnswers[item.question] = item.answer;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching random questions:', error);
+                });
+        },
+        showAnswer(question) {
+            let answer = this.randomAnswers[question.question]; // 根据问题文本获取答案
+                alert(answer); // 使用alert弹窗显示答案，你也可以选择其他方式展示
+        },
+        //jerry finished
+
+        showAnswer(question) {
+            let answer = this.randomAnswers[question];
+            alert(answer); // 显示答案给用户
+        },
+        scrollToBottom() {
             this.$refs.chatContainer.scrollTop = this.$refs.chatContainer.scrollHeight;
-          },
-          async fetchTopQuestions() {
-            try {
-              const response = await axios.get('http://127.0.0.1:5000/top_questions');
-              this.topQuestions = response.data.top_questions;
-            } catch (error) {
-              console.error('Error fetching top questions:', error);
-            }
-          },
-          async generateTextFromVocie(){
+        },
+        generateTextFromVoice() {
             this.supportsSpeechRecognition = 'webkitSpeechRecognition' in window;
             if (this.supportsSpeechRecognition) {
-            this.recognition = new window.webkitSpeechRecognition();
-            this.recognition.continuous = true;
-            this.recognition.interimResults = true;
-            this.recognition.lang = 'en-US';
-            this.recognition.onresult = (event) => {
-            let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                  const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                  finalTranscript += transcript + ' ';
-                }
-              }
-            this.query = finalTranscript.trim();
-            if(this.query!=""||this.query){
-              this.isSpeechInput=true;
+                this.recognition = new window.webkitSpeechRecognition();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'en-US';
+                this.recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        }
+                    }
+                    this.query = finalTranscript.trim();
+                    if (this.query) {
+                        this.isSpeechInput = true;
+                    }
+                };
             }
-          };
-        }
-      },
-          toggleRecording() {
-            if (this.isRecording) {
-              this.recognition.stop();
-              this.isRecording = false;
-            } else {
-              this.recognition.start();
-              this.isRecording = true;
-            }
-          },
         },
-        watch: {
-          query(newValue) {
-            if(newValue.trim().length !== 0) {
+        toggleRecording() {
+            if (this.isRecording) {
+                this.recognition.stop();
+                this.isRecording = false;
+            } else {
+                this.recognition.start();
+                this.isRecording = true;
+            }
+        }
+    },
+    watch: {
+        query(newValue) {
+            if (newValue.trim().length !== 0) {
                 clearTimeout(this.queryTimeout);
                 this.queryTimeout = setTimeout(() => {
-                this.fetchSimilarQuestions();
+                    this.fetchSimilarQuestions();
                 }, 750);
             }
-          }
         }
-      });
-    </script>
-  </body>
+    }
+});
+</script>          
+</body>
 </html>

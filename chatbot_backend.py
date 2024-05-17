@@ -18,6 +18,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 from flask_cors import CORS
+import random
+
 load_dotenv()
 
 def recognize_speech():
@@ -92,6 +94,35 @@ def insert_or_update_question(question_text):
 app = Flask(__name__)
 CORS(app)
 
+# Jerry, 已经加载了全部的问题和答案到data变量中
+with open("data.json", "r", encoding="utf-8") as file:
+    data = json.load(file)
+
+@app.route('/get_random_questions')
+def get_random_questions():
+    questions = random.sample(data, 4)  # 从data中随机抽取4个问题
+    return jsonify(questions)
+
+#function for留言
+# API端點，用於接收留言
+@app.route('/comments', methods=['POST'])
+def post_comment():
+    content = request.json['content']
+    # 加载配置并创建数据库连接
+    config = load_database_config()
+    conn = mysql.connector.connect(**config['development'])
+    try:
+        cursor = conn.cursor()
+        # 插入留言内容到数据库
+        sql = 'INSERT INTO comments (content) VALUES (%s)'
+        cursor.execute(sql, (content,))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+    return jsonify({'status': 'success', 'message': 'Comment added'})
+#Jerry done
+
 # Load data from JSON file
 with open("data.json", "r", encoding="utf-8") as file:
     data = json.load(file)
@@ -109,7 +140,6 @@ processed_questions = [preprocess_text(question) for question in questions]
 
 # Compute sentence embeddings for questions
 question_embeddings = compute_sentence_embeddings(processed_questions)
-
 
 embedding = OpenAIEmbeddings()
 vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embedding)

@@ -13,6 +13,8 @@ def create_table():
     config = load_database_config()
     connection = mysql.connector.connect(**config['development'])  # Change to appropriate environment
     cursor = connection.cursor()
+    
+    # 创建 questions 表
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS questions (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -21,10 +23,28 @@ def create_table():
             INDEX idx_question_count (question_count)
         )
     """)
+    
+    # 检查表是否存在
+    cursor.execute("SHOW TABLES LIKE 'comments';")
+    result = cursor.fetchone()
+    if result:
+        print("Table exists.")
+    else:
+        print("Table does not exist, creating table...")
+    cursor.execute("""
+        CREATE TABLE comments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            content TEXT
+        );
+    """)
+    print("Table created.")
+    
     cursor.close()
     connection.close()
 
 if __name__ == "__main__":
-    print("start creating questions table..........")
+    print("Starting to create tables...")
+    load_database_config()
     create_table()
-    print("creating questions table successfully..........")
+    print("Tables created successfully.")
+
