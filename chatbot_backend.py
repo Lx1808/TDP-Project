@@ -19,7 +19,6 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 from flask_cors import CORS
 import random
-
 load_dotenv()
 
 def recognize_speech():
@@ -101,7 +100,8 @@ with open("data.json", "r", encoding="utf-8") as file:
 @app.route('/get_random_questions')
 def get_random_questions():
     questions = random.sample(data, 4)  # 从data中随机抽取4个问题
-    return jsonify(questions)
+    questions_with_answers = [{'question': q['question'], 'answer': q['answer']} for q in questions]
+    return jsonify(questions_with_answers)
 
 #function for留言
 # API端點，用於接收留言
@@ -123,9 +123,6 @@ def post_comment():
     return jsonify({'status': 'success', 'message': 'Comment added'})
 #Jerry done
 
-# Load data from JSON file
-with open("data.json", "r", encoding="utf-8") as file:
-    data = json.load(file)
 
 # Extract questions and answers from JSON data
 questions = []
@@ -140,6 +137,7 @@ processed_questions = [preprocess_text(question) for question in questions]
 
 # Compute sentence embeddings for questions
 question_embeddings = compute_sentence_embeddings(processed_questions)
+
 
 embedding = OpenAIEmbeddings()
 vectorstore = Chroma(persist_directory='./SwinburneFAQ', embedding_function=embedding)
