@@ -57,7 +57,7 @@
         el: '#app',
         mounted() {
           this.fetchTopQuestions();
-          this.generateTextFromVocie();
+          this.generateTextFromVoice();
         },
         data: {
           query: '',
@@ -134,7 +134,7 @@
               console.error('Error fetching top questions:', error);
             }
           },
-          async generateTextFromVocie(){
+          async generateTextFromVoice(){
             this.supportsSpeechRecognition = 'webkitSpeechRecognition' in window;
             if (this.supportsSpeechRecognition) {
             this.recognition = new window.webkitSpeechRecognition();
