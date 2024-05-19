@@ -23,7 +23,7 @@ from streamlit_feedback import streamlit_feedback
 
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = 'API KEY'
+os.environ['LANGCHAIN_API_KEY'] = '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'
 
 load_dotenv()
 
