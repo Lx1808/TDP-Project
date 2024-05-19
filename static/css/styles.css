@@ -11,7 +11,7 @@ body {
 }
 
 .chat-container {
-    max-height: 450px;
+    max-height: 600px;
     overflow-y: auto;
 }
 
@@ -19,22 +19,22 @@ body {
   height: 600px; /* default height */
 }
 
-@media screen and (max-width: 750px) {
+@media screen and (max-height: 750px) {
   .chat-container {
       height: 450px;
   }
 }
-@media screen and (max-width: 850px) {
+@media screen and (max-height: 850px) {
   .chat-container {
       height: 500px;
   }
 }
-@media screen and (max-width:900px) {
+@media screen and (max-height:900px) {
   .chat-container {
       height: 550px;
   }
 }
-@media screen and (max-width:1000px) {
+@media screen and (max-height:1000px) {
   .chat-container {
       height: 600px;
   }
