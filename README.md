@@ -12,9 +12,9 @@ The `Attempt 1` folder is a collection of several unrelated experiments aimed at
 
 In the `Attempt 2`, I tried to create something more stable. I experimented with using a more strict transformers model to obtain exact answers from the knowledge base as a way to deal with hallucinations. However, this approach lacked elegance and felt like a blunt way to tackle the problem.
 
-## latest.py
+## final.py
 
-Please refer to the latest file if you are interested in contributing. It is available on main branch too
+This is the final version we used during the presentation.
 
 ## Conclusion
 
