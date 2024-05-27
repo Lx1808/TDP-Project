@@ -16,8 +16,6 @@ In the `Attempt 2`, I tried to create something more stable. I experimented with
 
 This is the final version we used during the presentation.
 
-## Conclusion
 
-Thank you for visiting my experimental project repository. I appreciate your interest in my work and hope you find the experiments and attempts insightful. If you have any questions or suggestions, feel free to reach out.
 
-See you soon!
+
