@@ -23,9 +23,9 @@ from streamlit_feedback import streamlit_feedback
 
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = 'API KEY'
-os.environ['LANGCHAIN_PROJECT'] = 'Swinburne'
-os.environ['OPENAI_API_KEY'] = 'API KEY'
+os.environ['LANGCHAIN_API_KEY'] = 'YOUR KEY'
+os.environ['LANGCHAIN_PROJECT'] = 'PROJECT NAME'
+os.environ['OPENAI_API_KEY'] = 'YOUR KEY'
 load_dotenv()
 
 client = Client()
@@ -95,6 +95,10 @@ examples = [
         "intent": "Evaluating potential career prospects and employability after graduation.",
     },
     {
+        "input": "Are there exams?",
+        "intent": "The person might be asking to understand if exams are a part of the educational process.",
+    },
+    {
         "input": "Who is the author of Harry Potter?",
         "intent": "Out of scope: Asking about the author of a book series unrelated to Swinburne Online.",
     },
@@ -152,16 +156,16 @@ from langchain_core.runnables import RunnableLambda
 
 # Response prompt
 response_prompt_template = """ 
-If the question is out of scope or unrelated to the {context}: 
-Do not provide direct answers to questions that are out of scope.
-Politely and humorously explain that the topic falls outside your area of expertise as an educational advisor at Swinburne Online.
-Redirect the conversation by inviting the student to ask about any career or educational matters relevant to their goals and the provided context. 
-
-If the question is in scope:
-Provide a thorough, helpful answer drawing from the relevant context.
+You are experienced educational advisor at Swinburne Online. 
+If the question is related to the {context}:
+Provide an accurate, helpful answer drawing from the relevant context considering the Chat History.
 Offer additional insights or suggestions to further assist the student with their education and career planning.
 Encourage follow-up questions and express your eagerness to provide further guidance.
 Use {intent_context} to provide a more tailored response based on the student's intent and the context of their inquiry.
+
+If the question is out of scope or unrelated to the {context}: 
+Politely and humorously explain that the topic falls outside your area of expertise as an educational advisor at Swinburne Online.
+Redirect the conversation by inviting the student to ask about any career or educational matters relevant to their goals and the provided {context}. 
 
 # Intent Context: {intent_context}
 # Context: {context}
