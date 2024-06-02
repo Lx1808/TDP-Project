@@ -1,0 +1,245 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+#app {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.chat-container {
+    max-height: 450px;
+    overflow-y: auto;
+}
+
+.chat-container {
+  height: 600px; /* default height */
+}
+
+@media screen and (max-width: 750px) {
+  .chat-container {
+      height: 450px;
+  }
+}
+@media screen and (max-width: 850px) {
+  .chat-container {
+      height: 500px;
+  }
+}
+@media screen and (max-width:900px) {
+  .chat-container {
+      height: 550px;
+  }
+}
+@media screen and (max-width:1000px) {
+  .chat-container {
+      height: 600px;
+  }
+}
+
+.sidebar {
+    width: 300px; /* 侧边栏宽度 */
+    height: 100%; /* 充满整个高度 */
+    background-color: #f0f0f0;
+    position: fixed; /* 固定定位 */
+    top: 0;
+    right: 0; /* 固定在右边 */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
+    z-index: 999; /* 确保在其他元素上方显示 */
+  }
+
+  .sidebar.show {
+    transform: translateX(0); /* 显示侧边栏 */
+  }
+  
+  .sidebar h2 {
+    font-size: 18px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  
+  .sidebar ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .sidebar li {
+    padding: 10px 20px; /* 调整内边距 */
+    border-radius: 5px; /* 添加圆角 */
+    transition: background-color 0.3s ease; /* 添加过渡效果 */
+  }
+  
+  .sidebar li:hover {
+    background-color: #e0e0e0; /* 悬停时的背景颜色 */
+    cursor: pointer; /* 显示手型光标 */
+  }
+  
+  .sidebar li:last-child {
+    border-bottom: none; /* 最后一个项目没有分隔线 */
+  }
+  
+  
+  .question-text {
+    color: #333; /* 问题文本颜色 */
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.chat-input-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 600px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-container {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.similar-questions {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+.similar-questions.show {
+    display: block;
+}
+
+.input-container input {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+.sending-btn {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    transition: background-color 0.3s ease;
+    position: relative;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 20px;
+    max-height: calc(100vh - 200px);
+    padding-bottom: 100px;
+}
+
+li {
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.chat-container ul li:nth-child(odd) {
+    background-color: #f2f2f2;
+}
+.chat-container ul li:nth-child(even) {
+  background-color: #b3e6ff;
+}
+li strong {
+    margin-right: 10px;
+}
+
+.similar-questions h3 {
+    margin-top: 0;
+}
+
+.similar-questions ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.similar-questions li {
+    margin-bottom: 5px;
+}
+
+.loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border: 2px solid #4CAF50;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    z-index: 1;
+  }
+  
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }  
+
+.recording-btn {
+  min-width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 10px 0px 0px 10px;
+  transition: background-color 0.3s ease;
+}
+
+.recording-btn:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+
+.recording-btn:not(.recording) {
+  background-color: #4caf50; 
+  color: #fff;
+}
+
+.recording-btn.recording {
+  background-color: #2196f3; 
+  color: #fff;
+}
+audio{
+  margin-top: 10px;
+  height:30px;
+}

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SwinburneFAQ Bot</title>
+    <link rel="stylesheet" href="./static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <h1>SwinburneFAQ Bot</h1>
+      <div class="chat-input-container">
+        <div class="input-container">
+          <input v-model="query" placeholder="Enter your message" />
+          <button @click="sendQuery()" :disabled="!query || isSending" :class="{ 'loading': isSending }" class="sending-btn">
+            <span v-if="!isSending">Send</span>
+            <div v-else class="loading-spinner"></div>
+          </button>
+          <button @click="toggleRecording" :disabled="!supportsSpeechRecognition" class="recording-btn" :class="{ recording: isRecording }">
+            {{ isRecording ? 'Stop' : 'Talk' }}
+          </button>
+          <div>
+            <label>
+              <input type="checkbox" v-model="enableMultiLingual">
+            </label>
+          </div>
+        </div>
+        <div class="similar-questions" v-if="showSimilarQuestions" :class="{ show: showSimilarQuestions }">
+          <ul>
+            <li v-for="question in similarQuestions" @click="fillInput(question.text)">{{ question.text }}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="container">
+        <div ref="chatContainer" class="chat-container">
+          <ul>
+            <li v-for="message in chatHistory">
+              <strong>{{ message.sender }}:</strong> {{ message.content }}
+              <audio v-if="message.speech_output" :src="message.speech_output" controls></audio>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="sidebar">
+        <h2>Top 5 Questions</h2>
+        <ul>
+          <li v-for="(question, index) in topQuestions" :key="index" @click="sendQuery(question.question_text,false)">
+            {{ question.question_text }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      new Vue({
+        el: '#app',
+        mounted() {
+          this.fetchTopQuestions();
+          this.generateTextFromVoice();
+        },
+        data: {
+          query: '',
+          chatHistory: [],
+          similarQuestions: [],
+          isFillingInput: false,
+          isSending: false,
+          topQuestions: [],
+          enableMultiLingual: false,
+          isRecording: false,
+          recognition: null,
+          supportsSpeechRecognition: false,
+          isSpeechInput:false//default status is false, not using voice
+        },
+        computed: {
+          showSimilarQuestions() {
+            return this.query.trim().length > 0 && this.similarQuestions.length > 0;
+          },
+          chatBoxDisplay() {
+            return this.chatHistory.length === 0 ? 'none' : 'block';
+          }
+        },
+        methods: {
+          async sendQuery(question = null,isSpeechInput = this.isSpeechInput) {
+            let query = question ? question : this.query;
+            this.isSending = true;
+            const response = await axios.post('http://127.0.0.1:5000/get_response', {
+              query: query,
+              enableMultiLingual: this.enableMultiLingual,
+              isSpeechInput: isSpeechInput
+            });
+            this.chatHistory.push({
+              sender: 'Human',
+              content: query
+            });
+            this.chatHistory.push({
+              sender: 'AI',
+              content: response.data.response,
+              speech_output: response.data.is_speech_output ? 'output.mp3' : null
+            });
+            this.query = '';
+            this.isSending = false;
+            this.$nextTick(() => {
+              this.scrollToBottom();
+              this.fetchTopQuestions();
+              //when voice has been generated and send, isSpeechInput should be false again
+              this.isSpeechInput=false;
+            });
+          },
+          async fetchSimilarQuestions() {
+            if (!this.isFillingInput) {
+              try {
+                const response = await axios.post('http://127.0.0.1:5000/get_similar_questions', { query: this.query });
+                this.similarQuestions = response.data.similar_questions;
+              } catch (error) {
+                console.error('Error fetching similar questions:', error);
+              }
+            }
+            this.isFillingInput = false;
+          },
+          fillInput(question) {
+            this.query = question;
+            this.similarQuestions = [];
+            this.isFillingInput = true;
+          },
+          scrollToBottom() {
+            this.$refs.chatContainer.scrollTop = this.$refs.chatContainer.scrollHeight;
+          },
+          async fetchTopQuestions() {
+            try {
+              const response = await axios.get('http://127.0.0.1:5000/top_questions');
+              this.topQuestions = response.data.top_questions;
+            } catch (error) {
+              console.error('Error fetching top questions:', error);
+            }
+          },
+          async generateTextFromVoice(){
+            this.supportsSpeechRecognition = 'webkitSpeechRecognition' in window;
+            if (this.supportsSpeechRecognition) {
+            this.recognition = new window.webkitSpeechRecognition();
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+            this.recognition.onresult = (event) => {
+            let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                  const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                  finalTranscript += transcript + ' ';
+                }
+              }
+            this.query = finalTranscript.trim();
+            if(this.query!=""||this.query){
+              this.isSpeechInput=true;
+            }
+          };
+        }
+      },
+          toggleRecording() {
+            if (this.isRecording) {
+              this.recognition.stop();
+              this.isRecording = false;
+            } else {
+              this.recognition.start();
+              this.isRecording = true;
+            }
+          },
+        },
+        watch: {
+          query(newValue) {
+            if(newValue.trim().length !== 0) {
+                clearTimeout(this.queryTimeout);
+                this.queryTimeout = setTimeout(() => {
+                this.fetchSimilarQuestions();
+                }, 750);
+            }
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
